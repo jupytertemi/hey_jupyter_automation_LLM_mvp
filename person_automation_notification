@@ -1,0 +1,47 @@
+Person Spotted Notification (Automation)
+alias: Person Spotted
+description: >-
+  The automation triggers when a person is spotted It also tells you the time
+  the person was spotted
+triggers:
+  - trigger: mqtt
+    topic: face_recognition/detections
+conditions: []
+actions:
+  - action: notify.mobile_app_starship
+    metadata: {}
+    data:
+      message: Person was spotted
+  - action: tts.speak
+    metadata: {}
+    data:
+      cache: true
+      media_player_entity_id: media_player.study_room_clock
+      message: |
+        {% if trigger.payload %}
+              {% set payload = trigger.payload | from_json %}
+              {% if payload.name is defined and payload.date_time is defined and payload.confidence is defined and payload.camera is defined %}
+                {% set event_time = as_datetime(payload.date_time) %}
+                {% set current_time = now() %}
+                
+                {% if event_time.date() == current_time.date() %}
+                  {% set time_text = "today at " ~ event_time.strftime('%I:%M %p') %}
+                {% else %}
+                  {% set time_text = "on " ~ event_time.strftime('%B %d, %Y at %I:%M %p') %}
+                {% endif %}
+                
+                {% if payload.name in ["Unknown", "Unknown Person"] %}
+                  I just spotted someone I dont know {{ time_text }} by {{ payload.camera }}.
+                {% else %}
+                  I think I just spotted {{ payload.name }} {{ time_text }} by {{ payload.camera }} with a confidence score of {{ payload.confidence }}.
+                {% endif %}
+              {% else %}
+                Invalid or incomplete payload received.
+              {% endif %}
+            {% else %}
+              No payload received.
+            {% endif %}
+    target:
+      entity_id: tts.piper
+    enabled: true
+mode: single
