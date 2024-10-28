@@ -1,0 +1,15 @@
+alias: Car was spotted
+triggers:
+  - topic: frigate/number_plate_data
+    trigger: mqtt
+actions:
+  - data:
+      message: >-
+        {% set detection_time = as_datetime(trigger.payload_json.frame_time) %}
+        {% set formatted_time = detection_time.strftime('%-I:%M %p on %A, %-d %B
+        %Y') %} {% if trigger.payload_json.best_match_name %}
+          {{ trigger.payload_json.best_match_name }} was spotted at {{ formatted_time }}
+        {% else %}
+          A vehicle with license number {{ trigger.payload_json.ocr_text }} was spotted at {{ formatted_time }}
+        {% endif %}
+    action: notify.mobile_app_starship
