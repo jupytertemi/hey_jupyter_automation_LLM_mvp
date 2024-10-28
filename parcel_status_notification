@@ -1,0 +1,25 @@
+alias: "Parcel Detection Status"
+description: "This automation sends out a notification whenever a parcel is dropped off or picked up. it also endeavours to include a snapshot of the last person that was spooted - right before the parcel was taken"
+trigger:
+  - platform: mqtt
+    topic: frigate/parcel_status
+condition: []
+action:
+  - service: notify.mobile_app_starship
+    data:
+      message: >
+        {% set date_format = "%a, %-d %b %Y" %}
+        {% set current_date = now().strftime(date_format) %}
+        {% set trigger_date = now().strftime(date_format) %}
+        
+        {% set parcel_status = trigger.payload_json.status %}
+        {% set event_time = now().strftime('%I:%M %p') %}
+        
+        {% if current_date == trigger_date %}
+          {{ parcel_status }} today at {{ event_time }}.
+        {% elif (now() - timedelta(days=1)).strftime(date_format) == trigger_date %}
+          {{ parcel_status }} yesterday at {{ event_time }}.
+        {% else %}
+          {{ parcel_status }} on {{ now().strftime("%A, %-d %B %Y") }} at {{ event_time }}.
+        {% endif %}
+mode: single
