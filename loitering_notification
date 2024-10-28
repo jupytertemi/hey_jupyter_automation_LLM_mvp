@@ -1,0 +1,24 @@
+alias: "Loitering Detection Notification"
+trigger:
+  - platform: mqtt
+    topic: frigate/loitering
+condition: []
+action:
+  - service: notify.mobile_app_starship
+    data:
+      message: >
+        {% set loitering_status = trigger.payload_json.loitering_status %}
+        {% set additional_info = trigger.payload_json.additional_info %}
+        {% set timestamp = trigger.payload_json.timestamp %}
+        {% set event_time = as_timestamp(timestamp) | timestamp_custom('%-I:%M %p') %}
+        {% set event_date = as_timestamp(timestamp) | timestamp_custom('%A, %-d %B %Y') %}
+
+        {% if as_timestamp(now()) | timestamp_custom('%Y-%m-%d') == timestamp[:10] %}
+          Possible loitering event was detected today at {{ event_time }}.
+        {% elif as_timestamp(now()) - as_timestamp(timestamp) < 86400 %}
+          A loitering event was detected yesterday at {{ event_time }}.
+        {% else %}
+          A possible loitering event was detected on {{ event_date }} at {{ event_time }}.
+        {% endif %}
+
+        Additional Info: {{ additional_info }}
